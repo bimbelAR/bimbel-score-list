@@ -1,276 +1,70 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Nilai Ujian Bimbel</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #10b981;
-            --primary-dark: #059669;
-            --secondary: #6b7280;
-            --background: #f3f4f6;
-            --text: #374151;
-            --border: #d1d5db;
-            --shadow: 0 4px 12px rgba(0,0,0,0.1);
-            --radius: 12px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leaderboard Nilai Kuis</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0i8yEI0Ndx1adO_pbrDBgHmEJ_9cSSbI",
+      authDomain: "bimbel-score-list.firebaseapp.com",
+      projectId: "bimbel-score-list",
+      storageBucket: "bimbel-score-list.appspot.com",
+      messagingSenderId: "73795818595",
+      appId: "1:73795818595:web:56a1fa62434be63ec05456",
+      measurementId: "G-BDYBX4YV5C"
+    };
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 20px;
-        }
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+    window.onload = () => {
+      const tableBody = document.getElementById("leaderboard-body");
+      const q = query(collection(db, "quiz_results"), orderBy("timestamp", "desc"));
 
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .score-table {
-            width: 100%;
-            background: white;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        .score-table th,
-        .score-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .score-table th {
-            background: var(--background);
-            font-weight: 600;
-        }
-
-        .score-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .score-table tr:hover {
-            background: var(--background);
-        }
-
-        .score {
-            font-weight: bold;
-            color: var(--primary);
-        }
-
-        .date {
-            color: var(--secondary);
-            font-size: 0.9em;
-        }
-
-        .filter-section {
-            background: white;
-            padding: 20px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .filter-section select {
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            background-color: white;
-        }
-
-        .filter-section select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
-        }
-
-        .status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-passed {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-
-        .status-failed {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        @media (max-width: 768px) {
-            .score-table {
-                display: block;
-                overflow-x: auto;
-            }
-
-            .filter-section {
-                flex-direction: column;
-            }
-
-            .filter-section select {
-                width: 100%;
-            }
-        }
-    </style>
+      onSnapshot(q, (snapshot) => {
+        tableBody.innerHTML = "";
+        snapshot.forEach((doc, index) => {
+          const data = doc.data();
+          const time = data.timestamp ? data.timestamp.toDate().toLocaleString() : "-";
+          tableBody.innerHTML += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${data.nama}</td>
+              <td>${data.kelas}</td>
+              <td>${data.mata_pelajaran}</td>
+              <td>${data.skor}</td>
+              <td>${time}</td>
+            </tr>
+          `;
+        });
+      });
+    };
+  </script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #10b981; color: white; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Daftar Nilai Ujian Bimbel</h1>
-            <p>Hasil ujian seluruh siswa</p>
-        </div>
-
-        <div class="filter-section">
-            <select id="subjectFilter" onchange="filterScores()">
-                <option value="all">Semua Mata Pelajaran</option>
-                <option value="matematika">Matematika</option>
-                <option value="fisika">Fisika</option>
-                <option value="kimia">Kimia</option>
-                <option value="biologi">Biologi</option>
-                <option value="bindo">Bahasa Indonesia</option>
-                <option value="bing">Bahasa Inggris</option>
-                <option value="sejarah">Sejarah</option>
-                <option value="geografi">Geografi</option>
-                <option value="ekonomi">Ekonomi</option>
-                <option value="sosiologi">Sosiologi</option>
-                <option value="pkn">PKN</option>
-                <option value="seni">Seni Budaya</option>
-            </select>
-
-            <select id="classFilter" onchange="filterScores()">
-                <option value="all">Semua Kelas</option>
-                <option value="X">Kelas X</option>
-                <option value="XI">Kelas XI</option>
-                <option value="XII">Kelas XII</option>
-            </select>
-
-            <select id="programFilter" onchange="filterScores()">
-                <option value="all">Semua Program</option>
-                <option value="ipa">IPA</option>
-                <option value="ips">IPS</option>
-                <option value="bahasa">Bahasa</option>
-            </select>
-        </div>
-
-        <table class="score-table">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Siswa</th>
-                    <th>Kelas</th>
-                    <th>Program</th>
-                    <th>Mata Pelajaran</th>
-                    <th>Nilai</th>
-                    <th>Status</th>
-                    <th>Tanggal</th>
-                </tr>
-            </thead>
-            <tbody id="scoreTableBody">
-                <!-- Data akan diisi melalui JavaScript -->
-            </tbody>
-        </table>
-    </div>
-
-    <script>
-        // Data nilai (dalam implementasi sebenarnya akan diambil dari database)
-        const scores = [
-            {
-                id: 1,
-                name: "John Doe",
-                class: "X",
-                program: "ipa",
-                subject: "matematika",
-                score: 85,
-                date: "2024-01-15"
-            },
-            {
-                id: 2,
-                name: "Jane Smith",
-                class: "XI",
-                program: "ips",
-                subject: "ekonomi",
-                score: 90,
-                date: "2024-01-15"
-            }
-        ];
-
-        function formatDate(dateStr) {
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            return new Date(dateStr).toLocaleDateString('id-ID', options);
-        }
-
-        function getStatus(score) {
-            return score >= 75 ? 
-                '<span class="status status-passed">Lulus</span>' : 
-                '<span class="status status-failed">Belum Lulus</span>';
-        }
-
-        function filterScores() {
-            const subjectFilter = document.getElementById('subjectFilter').value;
-            const classFilter = document.getElementById('classFilter').value;
-            const programFilter = document.getElementById('programFilter').value;
-
-            const filteredScores = scores.filter(score => {
-                const matchSubject = subjectFilter === 'all' || score.subject === subjectFilter;
-                const matchClass = classFilter === 'all' || score.class === classFilter;
-                const matchProgram = programFilter === 'all' || score.program === programFilter;
-                return matchSubject && matchClass && matchProgram;
-            });
-
-            displayScores(filteredScores);
-        }
-
-        function displayScores(scoresToShow) {
-            const tableBody = document.getElementById('scoreTableBody');
-            tableBody.innerHTML = '';
-
-            scoresToShow.forEach((score, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${score.name}</td>
-                    <td>Kelas ${score.class}</td>
-                    <td>${score.program.toUpperCase()}</td>
-                    <td>${score.subject.charAt(0).toUpperCase() + score.subject.slice(1)}</td>
-                    <td class="score">${score.score}</td>
-                    <td>${getStatus(score.score)}</td>
-                    <td class="date">${formatDate(score.date)}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        // Tampilkan semua nilai saat halaman dimuat
-        displayScores(scores);
-    </script>
+  <h1>Leaderboard Nilai Kuis</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Nama</th>
+        <th>Kelas</th>
+        <th>Mata Pelajaran</th>
+        <th>Skor</th>
+        <th>Waktu</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboard-body"></tbody>
+  </table>
 </body>
 </html>
