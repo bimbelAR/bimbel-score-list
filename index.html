@@ -1,70 +1,248 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Leaderboard Nilai Kuis</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaderboard Nilai Kuis - Bimbel Arrazi</title>
+    <!-- Menggunakan Tailwind CSS untuk styling modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library untuk membuat PDF dari HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" xintegrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Menggunakan font Inter untuk tampilan yang lebih bersih */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f5; /* Latar belakang abu-abu muda */
+        }
+        /* Style untuk header agar sesuai dengan kop surat */
+        .header-line {
+            border-bottom: 4px solid black;
+        }
+        
+        /* CSS untuk menyembunyikan elemen saat mencetak */
+        @media print {
+            body {
+                background-color: white;
+            }
+            .no-print {
+                display: none;
+            }
+            .container {
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
+            }
+            #printable-area {
+                 box-shadow: none;
+                 border-radius: 0;
+            }
+        }
+        
+        /* Animasi untuk dropdown */
+        .dropdown-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .dropdown-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 150ms, transform 150ms;
+        }
+        .dropdown-leave {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .dropdown-leave-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 150ms, transform 150ms;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyA0i8yEI0Ndx1adO_pbrDBgHmEJ_9cSSbI",
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <!-- Tombol Aksi dalam bentuk Dropdown Menu -->
+        <div class="no-print mb-6 flex justify-end">
+            <div class="relative inline-block text-left">
+                <div>
+                    <button type="button" id="menu-btn" class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" aria-expanded="true" aria-haspopup="true">
+                        <i class="fas fa-bars"></i>
+                        <span class="ml-2">Menu</span>
+                    </button>
+                </div>
+                <!-- Dropdown menu, awalnya disembunyikan -->
+                <div id="dropdown-menu" class="hidden absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dropdown-enter" role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1">
+                    <div class="py-1" role="none">
+                        <a href="https://www.bimbelarrazi.my.id" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-0">
+                            <i class="fas fa-home w-4 mr-2"></i>Ke Beranda
+                        </a>
+                        <button id="print-btn" class="w-full text-left text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1">
+                            <i class="fas fa-print w-4 mr-2"></i>Cetak Halaman
+                        </button>
+                        <button id="download-pdf-btn" class="w-full text-left text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1">
+                            <i class="fas fa-file-pdf w-4 mr-2"></i>Unduh PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Area yang akan dicetak dan diunduh -->
+        <div id="printable-area" class="bg-white rounded-lg shadow-md">
+            <!-- Header / Kop Surat -->
+            <header class="p-4 rounded-t-lg">
+                <div class="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 header-line pb-4">
+                    <!-- Kiri: Logo -->
+                    <div class="flex-shrink-0 text-center">
+                        <img 
+                            src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgBdtwNYcC2HarSGMeaFiB3ETWrGma3ZRSKrYxSe9M0hQ5mX4HTkshui03hRq8-e7FNpZTIpSytR-8I4usU_F6fmP9UQFqHyZEzs3zGjVcbD5kfS3g8SQz48uQftsnIPu3vUJYqc_24NoU/w320-h181/Logo+Bimbel+Arrazi.png" 
+                            alt="Logo Bimbel Arrazi" 
+                            class="h-24 mx-auto"
+                            onerror="this.style.display='none'; this.parentElement.innerHTML += 'Logo tidak dapat dimuat';"
+                        >
+                    </div>
+                    <!-- Kanan: Judul dan Alamat -->
+                    <div class="text-center sm:text-right">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">BIMBEL ARRAZI</h1>
+                        <p class="text-sm text-gray-600 mt-2">Alamat : Purwogondo RT.20 RW.02 Kalinyamatan Jepara</p>
+                        <p class="text-sm text-gray-600">Email : bimbelarrazi@gmail.com | Telp/WA : 089669519674</p>
+                        <p class="text-sm text-gray-600">Kodepos : 59467 Provinsi Jawa Tengah</p>
+                    </div>
+                </div>
+            </header>
+            <!-- Tabel Leaderboard -->
+            <div class="p-4">
+                <h2 class="text-xl md:text-2xl font-bold text-center text-gray-700 mb-6">Rekap Nilai Ujian Tryout Siswa-Siswi</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-emerald-500 text-white">
+                            <tr>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Rank</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Nama</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Kelas</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Mata Pelajaran</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Skor</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Waktu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body" class="text-gray-700">
+                            <tr><td colspan="6" class="text-center p-8">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer class="no-print text-center mt-6 text-gray-500 text-sm">
+            <p>&copy; 2024 Bimbel Arrazi. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK & Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0i8yEI0Ndx1adO_pbrDBgHmEJ_9cSSbI",
       authDomain: "bimbel-score-list.firebaseapp.com",
       projectId: "bimbel-score-list",
       storageBucket: "bimbel-score-list.appspot.com",
       messagingSenderId: "73795818595",
       appId: "1:73795818595:web:56a1fa62434be63ec05456",
       measurementId: "G-BDYBX4YV5C"
-    };
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+        // Fungsi untuk mengunduh area tertentu sebagai PDF
+        function downloadAsPDF() {
+            const element = document.getElementById('printable-area');
+            const options = {
+              margin: [0.5, 0.5, 0.5, 0.5],
+              filename: 'rekap-nilai-bimbel-arrazi.pdf',
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true },
+              jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
 
-    window.onload = () => {
-      const tableBody = document.getElementById("leaderboard-body");
-      const q = query(collection(db, "quiz_results"), orderBy("timestamp", "desc"));
+            const downloadBtn = document.getElementById('download-pdf-btn');
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = `<i class="fas fa-spinner fa-spin w-4 mr-2"></i>Mengunduh...`;
+            downloadBtn.disabled = true;
+            
+            html2pdf().set(options).from(element).save().then(() => {
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.disabled = false;
+            });
+        }
 
-      onSnapshot(q, (snapshot) => {
-        tableBody.innerHTML = "";
-        snapshot.forEach((doc, index) => {
-          const data = doc.data();
-          const time = data.timestamp ? data.timestamp.toDate().toLocaleString() : "-";
-          tableBody.innerHTML += `
-            <tr>
-              <td>${index + 1}</td>
-              <td>${data.nama}</td>
-              <td>${data.kelas}</td>
-              <td>${data.mata_pelajaran}</td>
-              <td>${data.skor}</td>
-              <td>${time}</td>
-            </tr>
-          `;
-        });
-      });
-    };
-  </script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background-color: #10b981; color: white; }
-  </style>
-</head>
-<body>
-  <h1>Rekap Nilai Ujian Tryout Siswa-Siswi Bimbel Arrazi</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>Rank</th>
-        <th>Nama</th>
-        <th>Kelas</th>
-        <th>Mata Pelajaran</th>
-        <th>Skor</th>
-        <th>Waktu</th>
-      </tr>
-    </thead>
-    <tbody id="leaderboard-body"></tbody>
-  </table>
+        window.onload = () => {
+            const tableBody = document.getElementById("leaderboard-body");
+            const menuBtn = document.getElementById('menu-btn');
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            const printBtn = document.getElementById("print-btn");
+            const downloadPdfBtn = document.getElementById("download-pdf-btn");
+
+            // Logika untuk menampilkan/menyembunyikan dropdown menu
+            menuBtn.addEventListener('click', (event) => {
+                dropdownMenu.classList.toggle('hidden');
+                // Tambahkan animasi saat muncul
+                if (!dropdownMenu.classList.contains('hidden')) {
+                     dropdownMenu.classList.add('dropdown-enter-active');
+                } else {
+                     dropdownMenu.classList.remove('dropdown-enter-active');
+                }
+                event.stopPropagation(); // Mencegah event 'click' menyebar ke window
+            });
+
+            // Sembunyikan dropdown jika diklik di luar area menu
+            window.addEventListener('click', () => {
+                if (!dropdownMenu.classList.contains('hidden')) {
+                    dropdownMenu.classList.add('hidden');
+                    dropdownMenu.classList.remove('dropdown-enter-active');
+                }
+            });
+
+            // Event listener untuk tombol di dalam dropdown
+            printBtn.addEventListener('click', () => window.print());
+            downloadPdfBtn.addEventListener('click', downloadAsPDF);
+
+            // Query Firestore
+            const q = query(collection(db, "quiz_results"), orderBy("skor", "desc"));
+            onSnapshot(q, (snapshot) => {
+                tableBody.innerHTML = "";
+                if (snapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8">Belum ada data nilai.</td></tr>';
+                    return;
+                }
+                snapshot.forEach((doc, index) => {
+                    const data = doc.data();
+                    const time = data.timestamp ? data.timestamp.toDate().toLocaleString('id-ID', {
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    }) : "-";
+                    const row = `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-4 font-bold">${index + 1}</td>
+                            <td class="py-3 px-4">${data.nama || 'N/A'}</td>
+                            <td class="py-3 px-4">${data.kelas || 'N/A'}</td>
+                            <td class="py-3 px-4">${data.mata_pelajaran || 'N/A'}</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-600">${data.skor || 0}</td>
+                            <td class="py-3 px-4 text-sm text-gray-500">${time}</td>
+                        </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            }, (error) => {
+                console.error("Gagal mengambil data dari Firestore: ", error);
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-red-500">Terjadi kesalahan.</td></tr>';
+            });
+        };
+    </script>
 </body>
 </html>
